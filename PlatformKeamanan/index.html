@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Platform Keamanan</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 0;
+        }
+
+        .container {
+            width: 80%;
+            max-width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+            background-color: #fff;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        label {
+            display: block;
+            margin-top: 10px;
+            color: #555;
+        }
+
+        select, input, button {
+            width: 100%;
+            padding: 8px;
+            margin-top: 5px;
+            margin-bottom: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+
+        button {
+            background-color: #4CAF50;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background-color: #45a049;
+        }
+
+        #riskRating, #mitigationRecommendation {
+            font-weight: bold;
+            color: #333;
+            margin-top: 10px;
+        }
+
+        .dashboard {
+            padding: 15px;
+            background-color: #f0f0f0;
+            border-radius: 5px;
+            margin-top: 20px;
+        }
+
+        .dashboard h2 {
+            text-align: center;
+        }
+
+        .dashboard p {
+            font-size: 16px;
+        }
+
+        #chartContainer {
+            width: 100%;
+            height: 400px;
+        }
+
+        .slider {
+            width: 100%;
+            margin-top: 5px;
+        }
+
+        .slider-value {
+            font-weight: bold;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Platform Keamanan</h1>
+
+        <!-- Modul Pendeteksi Ancaman -->
+        <section class="section" id="threatDetectionModule">
+            <h2>Modul Pendeteksi Ancaman</h2>
+            <label for="threatType">Select a Threat Type:</label>
+            <select id="threatType">
+                <option value="Spoofing">Spoofing</option>
+                <option value="Tampering">Tampering</option>
+                <option value="Repudiation">Repudiation</option>
+                <option value="Information Disclosure">Information Disclosure</option>
+                <option value="Denial of Service">Denial of Service</option>
+                <option value="Elevation of Privilege">Elevation of Privilege</option>
+            </select>
+        </section>
+
+        <!-- Mesin Penilaian Risiko -->
+        <section class="section" id="riskAssessmentModule">
+            <h2>Mesin Penilaian Risiko</h2>
+            <label for="damage">Damage Potential:</label>
+            <input type="range" id="damage" class="slider" min="1" max="10" value="5">
+            <p id="damage-value" class="slider-value">Value: 5</p>
+
+            <label for="reproducibility">Reproducibility:</label>
+            <input type="range" id="reproducibility" class="slider" min="1" max="10" value="5">
+            <p id="reproducibility-value" class="slider-value">Value: 5</p>
+
+            <label for="exploitability">Exploitability:</label>
+            <input type="range" id="exploitability" class="slider" min="1" max="10" value="5">
+            <p id="exploitability-value" class="slider-value">Value: 5</p>
+
+            <label for="users">Affected Users:</label>
+            <input type="range" id="users" class="slider" min="1" max="10" value="5">
+            <p id="users-value" class="slider-value">Value: 5</p>
+
+            <label for="discoverability">Discoverability:</label>
+            <input type="range" id="discoverability" class="slider" min="1" max="10" value="5">
+            <p id="discoverability-value" class="slider-value">Value: 5</p>
+
+            <button onclick="rateThreat()">Rate Threat</button>
+            <p id="riskRating"></p>
+        </section>
+
+        <!-- Dashboard Keamanan -->
+        <div class="dashboard" id="securityDashboard" style="display: none;">
+            <h2>Dashboard Keamanan</h2>
+            <p><strong>Ancaman Terdeteksi:</strong> <span id="detectedThreat"></span></p>
+            <p><strong>Deskripsi Ancaman:</strong> <span id="detectedThreatDescription"></span></p>
+            <p><strong>Nilai Risiko:</strong> <span id="detectedRisk"></span></p>
+            <p><strong>Rekomendasi Mitigasi:</strong> <span id="mitigationRecommendation"></span></p>
+            <div id="chartContainer">
+                <canvas id="riskChart"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // STRIDE threat types and descriptions
+        const threats = {
+            'Spoofing': 'Penyusup mencoba untuk menyamar sebagai pengguna sah.',
+            'Tampering': 'Seorang penyerang mencoba untuk mengubah data atau kode dalam sistem.',
+            'Repudiation': 'Pengguna dapat mengingkari tindakan yang telah mereka lakukan.',
+            'Information Disclosure': 'Informasi sensitif dibocorkan ke pihak yang tidak berwenang.',
+            'Denial of Service': 'Penyerang mencoba untuk mengganggu atau menghentikan layanan.',
+            'Elevation of Privilege': 'Pengguna mencoba untuk mendapatkan hak akses yang lebih tinggi.'
+        };
+
+        // STRIDE Threat Identification
+        function identifyThreat() {
+            const threatType = document.getElementById('threatType').value;
+            const description = threats[threatType] || 'Ancaman tidak dikenali.';
+
+            // Store detected threat in variables
+            window.detectedThreat = threatType;
+            window.detectedThreatDescription = description;
+        }
+
+        // Update slider value displays
+        function updateSliderValue(sliderId, valueId) {
+            const slider = document.getElementById(sliderId);
+            const valueDisplay = document.getElementById(valueId);
+            valueDisplay.innerText = `Value: ${slider.value}`;
+        }
+
+        // DREAD risk assessment
+        function rateThreat() {
+            // Identify threat first
+            identifyThreat();
+
+            // Get slider values
+            const damage = parseInt(document.getElementById('damage').value);
+            const reproducibility = parseInt(document.getElementById('reproducibility').value);
+            const exploitability = parseInt(document.getElementById('exploitability').value);
+            const users = parseInt(document.getElementById('users').value);
+            const discoverability = parseInt(document.getElementById('discoverability').value);
+
+            const dreadScore = damage + reproducibility + exploitability + users + discoverability;
+            const averageScore = dreadScore / 5;
+
+            let riskLevel = '';
+            let mitigationRecommendation = '';
+
+            if (averageScore >= 8) {
+                riskLevel = 'High Risk';
+                mitigationRecommendation = 'Perkuat pengamanan sistem, lakukan audit secara berkala, dan implementasikan mekanisme deteksi lebih lanjut.';
+            } else if (averageScore >= 5) {
+                riskLevel = 'Medium Risk';
+                mitigationRecommendation = 'Perbaiki pengamanan sistem dan pastikan pemantauan yang lebih ketat terhadap potensi ancaman.';
+            } else {
+                riskLevel = 'Low Risk';
+                mitigationRecommendation = 'Lakukan pemantauan rutin dan pastikan sistem tetap terupdate untuk mengurangi potensi ancaman.';
+            }
+
+            // Display the threat, risk, and mitigation in Dashboard
+            document.getElementById('detectedThreat').innerText = window.detectedThreat;
+            document.getElementById('detectedThreatDescription').innerText = window.detectedThreatDescription;
+            document.getElementById('detectedRisk').innerText = `${riskLevel} (Score: ${averageScore.toFixed(1)})`;
+            document.getElementById('mitigationRecommendation').innerText = mitigationRecommendation;
+
+            // Show the dashboard after rating the threat
+            document.getElementById('securityDashboard').style.display = 'block';
+
+            // Update chart with risk levels
+            const ctx = document.getElementById('riskChart').getContext('2d');
+            const riskChart = new Chart(ctx, {
+                type: 'bar',
+                data: {
+                    labels: ['Damage', 'Reproducibility', 'Exploitability', 'Users', 'Discoverability'],
+                    datasets: [{
+                        label: 'Risk Assessment',
+                        data: [damage, reproducibility, exploitability, users, discoverability],
+                        backgroundColor: '#4CAF50',
+                        borderColor: '#45a049',
+                        borderWidth: 1
+                    }]
+                },
+                options: {
+                    scales: {
+                        y: {
+                            beginAtZero: true,
+                            max: 10
+                        }
+                    },
+                    responsive: true
+                }
+            });
+        }
+
+        // Initialize sliders to update values on input
+        document.getElementById('damage').addEventListener('input', function() {
+            updateSliderValue('damage', 'damage-value');
+        });
+        document.getElementById('reproducibility').addEventListener('input', function() {
+            updateSliderValue('reproducibility', 'reproducibility-value');
+        });
+        document.getElementById('exploitability').addEventListener('input', function() {
+            updateSliderValue('exploitability', 'exploitability-value');
+        });
+        document.getElementById('users').addEventListener('input', function() {
+            updateSliderValue('users', 'users-value');
+        });
+        document.getElementById('discoverability').addEventListener('input', function() {
+            updateSliderValue('discoverability', 'discoverability-value');
+        });
+    </script>
+</body>
+</html>
